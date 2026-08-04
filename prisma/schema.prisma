@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OtpPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  passwordHash    String
+  programme       String    @default("")
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  prefs         UserPreferences?
+  tasks         Task[]
+  notifications Notification[]
+  activity      Activity[]
+  otps          Otp[]
+
+  @@index([emailVerifiedAt, createdAt])
+  @@map("users")
+}
+
+model UserPreferences {
+  userId          String  @id
+  email           Boolean @default(true)
+  push            Boolean @default(false)
+  lead            String  @default("24h")
+  priorityChanges Boolean @default(true)
+  weeklyDigest    Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model Task {
+  id                 String    @id @default(cuid())
+  userId             String
+  title              String
+  description        String    @default("")
+  course             String
+  courseCode         String
+  deadline           DateTime
+  effort             String
+  status             String
+  personalPreference String    @default("normal")
+  completedAt        DateTime?
+  completedOnTime    Boolean?
+  snoozedUntil       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([userId, deadline])
+  @@index([userId, status])
+  @@map("tasks")
+}
+
+model Notification {
+  id           String    @id @default(cuid())
+  userId       String
+  taskId       String?
+  type         String
+  title        String
+  body         String
+  read         Boolean   @default(false)
+  snoozedUntil DateTime?
+  emailSentAt  DateTime?
+  leadBucket   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, taskId, leadBucket])
+  @@map("notifications")
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  text      String
+  at        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, at])
+  @@map("activity")
+}
+
+model Otp {
+  id         String     @id @default(cuid())
+  userId     String
+  purpose    OtpPurpose
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int        @default(0)
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("otps")
+}
