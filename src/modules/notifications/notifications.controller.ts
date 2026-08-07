@@ -37,6 +37,16 @@ export class NotificationsController {
     const data = await notificationsService.restore(requireUserId(req), req.params.id!);
     return successResponse(res, data);
   };
+
+  /** Creates a live Socket.IO system notification for the signed-in user (demo / QA). */
+  ping = async (req: Request, res: Response) => {
+    const data = await notificationsService.createSystem(
+      requireUserId(req),
+      "Molade live notification",
+      "Socket.IO is connected — you received this in real time.",
+    );
+    return successResponse(res, data, "Notification pushed", 201);
+  };
 }
 
 export const notificationsController = new NotificationsController();

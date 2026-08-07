@@ -15,6 +15,7 @@
     "prisma:studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke-e2e.ts",
+    "smoke:socket": "tsx scripts/smoke-socket.ts",
     "mail:test": "tsx scripts/test-brevo.ts",
     "db:up": "docker compose up -d"
   },
@@ -34,6 +35,7 @@
     "morgan": "^1.10.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.5",
+    "socket.io": "^4.8.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -47,6 +49,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.17",
     "prisma": "^6.14.0",
+    "socket.io-client": "^4.8.3",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2"
   }

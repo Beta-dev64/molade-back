@@ -12,6 +12,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/", asyncHandler(notificationsController.list));
+router.post("/ping", asyncHandler(notificationsController.ping));
 router.post("/read-all", asyncHandler(notificationsController.markAllRead));
 router.post(
   "/:id/read",

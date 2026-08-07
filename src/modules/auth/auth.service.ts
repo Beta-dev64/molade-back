@@ -117,7 +117,8 @@ export class AuthService {
 
   async verifyResetOtp(email: string, code: string) {
     const user = await otpService.verify(email, code, OtpPurpose.PASSWORD_RESET);
-    return signResetToken(user.id);
+    const { token, expiresInSeconds } = signResetToken(user.id);
+    return { resetToken: token, expiresInSeconds };
   }
 
   async resetPassword(resetToken: string, password: string) {

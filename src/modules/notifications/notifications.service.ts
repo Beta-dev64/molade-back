@@ -2,6 +2,12 @@ import { prisma } from "../../db/prisma";
 import { notFound } from "../../lib/errors";
 import { serializeNotification } from "../../lib/serialize";
 import { cacheGet, cacheSet, invalidateUserCache } from "../../redis/cache";
+import {
+  emitNotificationNew,
+  emitNotificationRemoved,
+  emitNotificationUpdated,
+  emitNotificationsSync,
+} from "../../socket/io";
 import { tasksService } from "../tasks/tasks.service";
 
 export class NotificationsService {
@@ -27,7 +33,9 @@ export class NotificationsService {
       data: { read: true },
     });
     await invalidateUserCache(userId);
-    return serializeNotification(row);
+    const payload = serializeNotification(row);
+    emitNotificationUpdated(userId, payload);
+    return payload;
   }
 
   async markAllRead(userId: string) {
@@ -36,6 +44,7 @@ export class NotificationsService {
       data: { read: true },
     });
     await invalidateUserCache(userId);
+    emitNotificationsSync(userId);
     return { ok: true as const };
   }
 
@@ -43,6 +52,7 @@ export class NotificationsService {
     await this.assertOwned(userId, id);
     await prisma.notification.delete({ where: { id } });
     await invalidateUserCache(userId);
+    emitNotificationRemoved(userId, id);
     return { ok: true as const };
   }
 
@@ -54,13 +64,14 @@ export class NotificationsService {
       data: { snoozedUntil: until, read: true },
     });
 
-    // Mirror frontend: snoozing a task-linked reminder also snoozes the task
     if (n.taskId) {
       await tasksService.snooze(userId, n.taskId, hours);
     }
 
     await invalidateUserCache(userId);
-    return serializeNotification(row);
+    const payload = serializeNotification(row);
+    emitNotificationUpdated(userId, payload);
+    return payload;
   }
 
   async restore(userId: string, id: string) {
@@ -73,7 +84,28 @@ export class NotificationsService {
       await tasksService.unsnooze(userId, n.taskId);
     }
     await invalidateUserCache(userId);
-    return serializeNotification(row);
+    const payload = serializeNotification(row);
+    emitNotificationUpdated(userId, payload);
+    return payload;
+  }
+
+  /**
+   * Manual / test helper — creates a system notification and pushes it live.
+   */
+  async createSystem(userId: string, title: string, body: string) {
+    const row = await prisma.notification.create({
+      data: {
+        userId,
+        type: "system",
+        title,
+        body,
+        leadBucket: `system-${Date.now()}`,
+      },
+    });
+    await invalidateUserCache(userId);
+    const payload = serializeNotification(row);
+    emitNotificationNew(userId, payload);
+    return payload;
   }
 
   private async assertOwned(userId: string, id: string) {

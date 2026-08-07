@@ -10,6 +10,7 @@ Express + Prisma + PostgreSQL + Redis API for the Molade Intelligent Task Manage
 - **Prisma** + PostgreSQL
 - **Redis** — rate limiting (100 req/IP/min), OTP cooldown, response caching
 - **Brevo API** — transactional HTML email (`POST /v3/smtp/email`); Nodemailer SMTP/jsonTransport as fallback
+- **Socket.IO** — JWT-authenticated real-time notifications (`notification:new` / update / remove)
 - **Custom JWT auth** — no Better Auth
 - **Cron jobs** — purge unverified users (24h), deadline reminders
 
@@ -73,9 +74,10 @@ npm run dev
 
 ```bash
 npm run smoke
+npm run smoke:socket   # JWT Socket.IO + live notification ping
 ```
 
-Covers: health, login, tasks CRUD, priorities, register + OTP verify, **user isolation / IDOR**, forgot/reset password.
+Covers: health, login, tasks CRUD, priorities, register + OTP verify, **user isolation / IDOR**, forgot/reset password, real-time notifications.
 
 ## Auth flow
 
