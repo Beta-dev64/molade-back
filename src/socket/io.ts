@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from "http";
 import { Server, type Socket } from "socket.io";
-import { getCorsOrigins } from "../config/env";
+import { env, getCorsOrigins } from "../config/env";
 import { verifyAccessToken } from "../lib/jwt";
 import type { serializeNotification } from "../lib/serialize";
 
