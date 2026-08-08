@@ -45,6 +45,13 @@ export const env = envSchema.parse(process.env);
 export const isDev = env.NODE_ENV === "development";
 export const isProd = env.NODE_ENV === "production";
 
+/** Parsed CORS allow-list (comma-separated CORS_ORIGIN). */
+export function getCorsOrigins(): string[] {
+  return env.CORS_ORIGIN.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /** Parse `Name <email@domain>` or bare email from MAIL_FROM. */
 export function parseMailFrom(raw = env.MAIL_FROM): { name: string; email: string } {
   const match = raw.match(/^\s*(?:"?([^"<]*)"?\s*)?<([^>]+)>\s*$/);

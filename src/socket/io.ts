@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from "http";
 import { Server, type Socket } from "socket.io";
-import { env } from "../config/env";
+import { getCorsOrigins } from "../config/env";
 import { verifyAccessToken } from "../lib/jwt";
 import type { serializeNotification } from "../lib/serialize";
 
@@ -22,7 +22,7 @@ function userRoom(userId: string) {
 export function initSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: env.CORS_ORIGIN.split(",").map((s) => s.trim()),
+      origin: getCorsOrigins(),
       credentials: true,
     },
     path: "/socket.io",

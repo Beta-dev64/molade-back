@@ -3,7 +3,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import { env } from "./config/env";
+import { env, getCorsOrigins } from "./config/env";
 import { startDeadlineRemindersJob } from "./jobs/deadlineReminders.job";
 import { startPurgeUnverifiedJob } from "./jobs/purgeUnverified.job";
 import { asyncHandler } from "./lib/asyncHandler";
@@ -24,7 +24,13 @@ export function createApp() {
 
   app.set("trust proxy", 1);
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+  const corsOrigins = getCorsOrigins();
+  app.use(
+    cors({
+      origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
+      credentials: true,
+    }),
+  );
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
   app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
