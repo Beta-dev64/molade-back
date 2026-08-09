@@ -3,7 +3,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import { env, getCorsOrigins } from "./config/env";
+import { env, getCorsOrigins, isCorsOriginAllowed } from "./config/env";
 import { startDeadlineRemindersJob } from "./jobs/deadlineReminders.job";
 import { startPurgeUnverifiedJob } from "./jobs/purgeUnverified.job";
 import { asyncHandler } from "./lib/asyncHandler";
@@ -23,12 +23,32 @@ export function createApp() {
   const app = express();
 
   app.set("trust proxy", 1);
-  app.use(helmet());
-  const corsOrigins = getCorsOrigins();
+
+  // CORS before helmet / rate-limit so preflight always gets ACAO headers
+  const allowed = getCorsOrigins();
+  console.log("[cors] allow-list:", allowed.join(", "));
+  const corsOptions: cors.CorsOptions = {
+    origin(origin, callback) {
+      if (isCorsOriginAllowed(origin)) {
+        // Reflect the request Origin so credentials work
+        callback(null, origin || true);
+        return;
+      }
+      console.warn("[cors] blocked origin:", origin);
+      callback(null, false);
+    },
+    credentials: true,
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+    optionsSuccessStatus: 204,
+  };
+  app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions));
+
   app.use(
-    cors({
-      origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
-      credentials: true,
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
     }),
   );
   app.use(express.json({ limit: "1mb" }));

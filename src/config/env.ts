@@ -45,11 +45,27 @@ export const env = envSchema.parse(process.env);
 export const isDev = env.NODE_ENV === "development";
 export const isProd = env.NODE_ENV === "production";
 
-/** Parsed CORS allow-list (comma-separated CORS_ORIGIN). */
+/** Always-allowed production frontends (merged with CORS_ORIGIN). */
+const DEFAULT_CORS_ORIGINS = [
+  "http://localhost:8080",
+  "http://127.0.0.1:8080",
+  "https://molade.lovable.app",
+  "https://moladeprd.vercel.app",
+];
+
+/** Parsed CORS allow-list: env CORS_ORIGIN + known production frontends. */
 export function getCorsOrigins(): string[] {
-  return env.CORS_ORIGIN.split(",")
-    .map((s) => s.trim())
+  const fromEnv = env.CORS_ORIGIN.split(",")
+    .map((s) => s.trim().replace(/\/$/, ""))
     .filter(Boolean);
+  return [...new Set([...DEFAULT_CORS_ORIGINS, ...fromEnv])];
+}
+
+/** True when the browser Origin is on the allow-list. */
+export function isCorsOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true; // same-origin / curl / server-to-server
+  const normalized = origin.trim().replace(/\/$/, "");
+  return getCorsOrigins().includes(normalized);
 }
 
 /** Parse `Name <email@domain>` or bare email from MAIL_FROM. */

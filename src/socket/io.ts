@@ -20,13 +20,18 @@ function userRoom(userId: string) {
 }
 
 export function initSocket(httpServer: HttpServer): Server {
+  const origins = getCorsOrigins();
   io = new Server(httpServer, {
     cors: {
-      origin: getCorsOrigins(),
+      origin: origins,
       credentials: true,
+      methods: ["GET", "POST"],
     },
     path: "/socket.io",
+    // Helpful behind Render’s reverse proxy
+    allowEIO3: true,
   });
+  console.log("[socket] CORS origins:", origins.join(", "));
 
   io.use((socket, next) => {
     try {

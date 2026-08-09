@@ -13,7 +13,10 @@ function clientIp(req: Request): string {
 
 /** Redis-backed sliding window: RATE_LIMIT_MAX requests per IP per window. */
 export async function rateLimitMiddleware(req: Request, _res: Response, next: NextFunction) {
-  if (req.path === "/api/health") return next();
+  // Never rate-limit health checks or CORS preflight
+  if (req.method === "OPTIONS" || req.path === "/api/health" || req.path.endsWith("/health")) {
+    return next();
+  }
 
   const ip = clientIp(req);
   const key = `rl:${ip}:${Math.floor(Date.now() / (env.RATE_LIMIT_WINDOW_SEC * 1000))}`;
