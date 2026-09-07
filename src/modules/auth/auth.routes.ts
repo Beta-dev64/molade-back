@@ -29,5 +29,6 @@ router.post(
   asyncHandler(authController.resetPassword),
 );
 router.post("/logout", asyncHandler(authController.logout));
+router.get("/config", asyncHandler(authController.config));
 
 export default router;

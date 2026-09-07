@@ -42,6 +42,11 @@ export class AuthController {
     const data = authService.logout();
     return successResponse(res, data, "Logged out");
   };
+
+  config = async (_req: Request, res: Response) => {
+    const data = authService.getConfig();
+    return successResponse(res, data);
+  };
 }
 
 export const authController = new AuthController();

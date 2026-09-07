@@ -85,6 +85,7 @@ Covers: health, login, tasks CRUD, priorities, register + OTP verify, **user iso
 |------|----------|
 | Register | `POST /api/auth/register` |
 | Verify email (OTP `XXX-XXX`) | `POST /api/auth/verify-email` |
+| Auth config (verification mode) | `GET /api/auth/config` |
 | Resend OTP | `POST /api/auth/resend-otp` |
 | Login | `POST /api/auth/login` |
 | Forgot password | `POST /api/auth/forgot-password` |
@@ -92,8 +93,23 @@ Covers: health, login, tasks CRUD, priorities, register + OTP verify, **user iso
 | Reset password | `POST /api/auth/reset-password` |
 
 - OTP lasts **10 minutes**, max **5** attempts, format like `679-T6Y`
-- Unverified accounts deleted after **24 hours**
+- Unverified accounts deleted after **24 hours** (skipped when `AUTH_VERIFICATION_MODE=lax`)
 - Set `BREVO_API_KEY` (+ verified `BREVO_SENDER_EMAIL`) to send real HTML via Brevo. Without it, emails use Nodemailer `jsonTransport` (logged). In development, OTP codes also print as `[otp:dev] …`
+
+### Marker / demo access (`AUTH_VERIFICATION_MODE`)
+
+| Value | Behaviour |
+|-------|-----------|
+| empty / omitted | Original flow: OTP required after signup; unverified users cannot log in |
+| `lax` | OTP screen still works; **Skip** is offered; unverified users can log in and use the API |
+
+Set on Render (or local `.env`) when professors need to grade without receiving email:
+
+```env
+AUTH_VERIFICATION_MODE=lax
+```
+
+Public flag for the frontend skip button: `GET /api/auth/config`.
 
 ## Authenticated resources
 

@@ -39,11 +39,26 @@ const envSchema = z.object({
 
   MAIL_FROM: z.string().default("Molade <noreply@molade.app>"),
   MAIL_LOGO_URL: z.string().optional().default(""),
+
+  /**
+   * Empty / omitted = original OTP-required auth.
+   * `lax` = graders may skip email OTP and log in unverified.
+   * Any other value is treated as empty (strict).
+   */
+  AUTH_VERIFICATION_MODE: z.preprocess((v) => {
+    if (typeof v !== "string") return "";
+    return v.trim().toLowerCase() === "lax" ? "lax" : "";
+  }, z.enum(["", "lax"])),
 });
 
 export const env = envSchema.parse(process.env);
 export const isDev = env.NODE_ENV === "development";
 export const isProd = env.NODE_ENV === "production";
+
+/** True when AUTH_VERIFICATION_MODE=lax (OTP optional; unverified users may log in). */
+export function isAuthVerificationLax(): boolean {
+  return env.AUTH_VERIFICATION_MODE === "lax";
+}
 
 /** Always-allowed production frontends (merged with CORS_ORIGIN). */
 const DEFAULT_CORS_ORIGINS = [
