@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { prisma } from "../db/prisma";
+import { isAuthVerificationLax } from "../config/env";
 import { unauthorized, forbidden, AppError } from "../lib/errors";
 import { verifyAccessToken } from "../lib/jwt";
 
@@ -25,7 +26,7 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
     });
 
     if (!user) throw unauthorized("Account no longer exists");
-    if (!user.emailVerifiedAt) {
+    if (!user.emailVerifiedAt && !isAuthVerificationLax()) {
       throw new AppError(403, "Please verify your email before continuing.", "EMAIL_NOT_VERIFIED");
     }
 

@@ -56,6 +56,19 @@ async function main() {
     console.log("✓ health", (body.data as { status: string }).status);
   }
 
+  // 1b. Auth verification mode (empty = strict OTP, lax = skippable)
+  {
+    const { res, body } = await req("/api/auth/config");
+    assert(res.ok, `auth config failed: ${JSON.stringify(body)}`);
+    const data = body.data as { verificationMode: string; verificationSkippable: boolean };
+    assert(
+      data.verificationMode === "lax" || data.verificationMode === "",
+      `unexpected verificationMode: ${data.verificationMode}`,
+    );
+    assert(data.verificationSkippable === (data.verificationMode === "lax"), "skippable mismatch");
+    console.log("✓ auth config", data.verificationMode || "(strict)");
+  }
+
   // 2. Login seeded user
   let token = "";
   {
@@ -163,6 +176,40 @@ async function main() {
     assert(res.status === 404, `expected 404 for foreign task, got ${res.status}`);
     assert(body.success === false, "expected error envelope");
     console.log("✓ IDOR blocked on foreign task id");
+  }
+
+  // 8b. Lax mode: unverified user can log in and call a protected route
+  {
+    const cfg = await req("/api/auth/config");
+    const skippable = (cfg.body.data as { verificationSkippable: boolean }).verificationSkippable;
+    if (skippable) {
+      const laxEmail = `smoke.lax.${Date.now()}@ulster.ac.uk`;
+      const reg = await req("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Lax Marker",
+          email: laxEmail,
+          password: "Password123!",
+        }),
+      });
+      assert(reg.res.status === 201, `lax register failed: ${JSON.stringify(reg.body)}`);
+
+      const loginRes = await req("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: laxEmail, password: "Password123!" }),
+      });
+      assert(loginRes.res.ok, `lax unverified login failed: ${JSON.stringify(loginRes.body)}`);
+      const laxToken = (loginRes.body.data as { token: string }).token;
+
+      const tasks = await req("/api/tasks", {
+        headers: { Authorization: `Bearer ${laxToken}` },
+      });
+      assert(tasks.res.ok, `lax unverified API access failed: ${JSON.stringify(tasks.body)}`);
+      await prisma.user.deleteMany({ where: { email: laxEmail } });
+      console.log("✓ lax unverified login + API access");
+    } else {
+      console.log("✓ lax unverified login skipped (strict mode)");
+    }
   }
 
   // 9. Forgot password + reset

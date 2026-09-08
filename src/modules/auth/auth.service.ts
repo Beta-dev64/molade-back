@@ -12,6 +12,7 @@ import { serializeUser } from "../../lib/serialize";
 import { sendMail } from "../../mail/sendMail";
 import { passwordResetTemplate } from "../../mail/templates/passwordReset";
 import { verifyEmailTemplate } from "../../mail/templates/verifyEmail";
+import { isAuthVerificationLax } from "../../config/env";
 import { otpService } from "./otp.service";
 
 const OTP_EXPIRES_MIN = 10;
@@ -43,6 +44,7 @@ export class AuthService {
 
     return {
       requiresVerification: true as const,
+      verificationSkippable: isAuthVerificationLax(),
       email: user.email,
       message: "Check your email for a verification code",
     };
@@ -87,7 +89,7 @@ export class AuthService {
       throw unauthorized("Invalid email or password");
     }
 
-    if (!user.emailVerifiedAt) {
+    if (!user.emailVerifiedAt && !isAuthVerificationLax()) {
       throw new AppError(
         403,
         "Please verify your email before logging in.",
@@ -101,7 +103,7 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (user?.emailVerifiedAt) {
+    if (user && (user.emailVerifiedAt || isAuthVerificationLax())) {
       const otpDisplay = await otpService.issue(user.id, OtpPurpose.PASSWORD_RESET);
       await sendMail({
         to: user.email,
@@ -135,6 +137,13 @@ export class AuthService {
 
   logout() {
     return { ok: true as const };
+  }
+
+  getConfig() {
+    return {
+      verificationMode: isAuthVerificationLax() ? ("lax" as const) : ("" as const),
+      verificationSkippable: isAuthVerificationLax(),
+    };
   }
 }
 

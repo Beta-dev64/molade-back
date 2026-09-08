@@ -1,5 +1,5 @@
 import http from "http";
-import { env } from "./config/env";
+import { env, isAuthVerificationLax } from "./config/env";
 import { createApp, startBackgroundJobs } from "./app";
 import { prisma } from "./db/prisma";
 import { getRedis } from "./redis/client";
@@ -12,6 +12,9 @@ initSocket(httpServer);
 const server = httpServer.listen(env.PORT, () => {
   console.log(`[api] listening on http://localhost:${env.PORT}`);
   console.log(`[socket] path=/socket.io cors=${env.CORS_ORIGIN}`);
+  if (isAuthVerificationLax()) {
+    console.log("[auth] AUTH_VERIFICATION_MODE=lax — OTP optional; unverified login allowed");
+  }
   startBackgroundJobs();
 });
 
